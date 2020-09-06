@@ -48,7 +48,7 @@ def build_sleep(subject_id, dataset):
             time_bed = sleep_dataset[i]['duration'] / MS_PER_HR_FLOAT, #this would be the first sleep event only
             sleep_eff = sleep_dataset[i]['efficiency'], #this would be the first sleep event only
             fall_asleep_dur = sleep_dataset[i]['minutesToFallAsleep'] / MIN_PER_HR_FLOAT,
-            restless_dur = sleep_dataset[i]['restlessDuration'] / MIN_PER_HR_FLOAT,
+            restless_dur = sleep_dataset[i]['restlessDuration'] / MIN_PER_HR_FLOAT, #where does this key come from? no mention in fitbit's API, maybe it changed?
             #restless_prop = restless_dur / sleep_dur,
             awakenings_count = sleep_dataset[i]['awakeningsCount'],
             awake_count = sleep_dataset[i]['awakeCount'],
