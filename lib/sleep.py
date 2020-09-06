@@ -36,9 +36,9 @@ def build_sleep(subject_id, dataset):
             lwhr = get_lowest_heart_rate( dataset['activities-heart-intraday'] ),
             cal = int( dataset['activities-calories'][0]['value'] ) if dataset.get('activities-calories') else '.',
 
-            sleep_events = int( dataset['summary']['totalSleepRecords'] ),
-            total_sleep_dur = dataset['summary']['totalMinutesAsleep']/ MIN_PER_HR_FLOAT, #across sleep events
-            total_time_bed = dataset['summary']['totalTimeInBed']/ MIN_PER_HR_FLOAT, #across sleep events
+            sleep_events = int( dataset['sleep-summary']['totalSleepRecords'] ),
+            total_sleep_dur = dataset['sleep-summary']['totalMinutesAsleep']/ MIN_PER_HR_FLOAT, #across sleep events
+            total_time_bed = dataset['sleep-summary']['totalTimeInBed']/ MIN_PER_HR_FLOAT, #across sleep events
 
             is_main_event = '1' if sleep_dataset[i]['isMainSleep']==True else '0',
             sleep_start_time = sleep_dataset[i]['startTime'] if sleep_dataset[i].get('startTime') else '.',
