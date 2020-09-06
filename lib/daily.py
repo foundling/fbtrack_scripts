@@ -11,9 +11,9 @@ Row = row_factory(headers=headers['daily'])
 
 def build_daily(subject_id, dataset):
 
-    heart_data = dataset['activities-heart-intraday']['dataset'] 
+    heart_data = dataset.get('activities-heart-intraday', None)
 
-    if len(heart_data):     
+    if heart_data is not None and len(heart_data):     
 
         return Row(
             
@@ -22,7 +22,7 @@ def build_daily(subject_id, dataset):
             avghr=get_avg_heart_rate( dataset['activities-heart-intraday'] ), 
             pkhr=get_peak_heart_rate( dataset['activities-heart-intraday'] ), 
             lwhr=get_lowest_heart_rate( dataset['activities-heart-intraday'] ), 
-            step=int( dataset['activities-steps'][0]['value'] ),
+            step=int(dataset['activities-steps'][0]['value']) if dataset.get('activities-steps') else '.',
             #cal=int( dataset['activities-calories'][0]['value'] ),
             cal=get_calories(dataset.get('activities-calories')),
             dt=float(dataset['activities-distance'][0]['value']) if len(dataset.get('activities-distance', [])) else '.',
@@ -35,5 +35,5 @@ def build_daily(subject_id, dataset):
 
         return Row(
             subjectid=subject_id,
-            date=dataset['activities-heart'][0]['dateTime'],
+            date='.'
         ) 

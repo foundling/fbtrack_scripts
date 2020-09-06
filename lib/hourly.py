@@ -53,7 +53,7 @@ def total_distance_hr(hour, dataset):
 
 def build_hourly(subject_id, dataset):
 
-    if len(dataset.get('activities-heart-intraday', []).get('dataset', [])):     
+    if 'activities-heart-intraday' in dataset and 'dataset' in dataset['activities-heart-intraday']:
 
         return [ Row(
                     subjectid=subject_id,
@@ -73,6 +73,6 @@ def build_hourly(subject_id, dataset):
 
         return [ Row(
                     subjectid=subject_id,
-                    date=hourly_time_stamp(hour, dataset['activities-heart'][0]['dateTime']),
+                    date=hourly_time_stamp(hour, dataset['activities-heart'][0]['dateTime']) if 'activities-heart' in dataset else '.',
                  )
                  for hour in HOURS ]

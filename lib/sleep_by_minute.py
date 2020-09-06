@@ -4,9 +4,9 @@ from dateutil.parser import parse
 import json
 import os
 
-from common import MS_PER_HR_FLOAT, MIN_PER_HR_FLOAT, get_avg_heart_rate, get_peak_heart_rate, get_lowest_heart_rate, fb_date_to_msband_date
-from headers import headers
-from row import row_factory
+from .common import MS_PER_HR_FLOAT, MIN_PER_HR_FLOAT, get_avg_heart_rate, get_peak_heart_rate, get_lowest_heart_rate, fb_date_to_msband_date
+from .headers import headers
+from .row import row_factory
 
 Row = row_factory(headers=headers['sleep_by_minute'])
 
@@ -42,5 +42,5 @@ def build_sleep_minute(subject_id, dataset):
     else:
         return [ Row(
             subjectid=subject_id,
-            date=dataset['activities-heart'][0]['dateTime'],
+            date='.'
         ) ]

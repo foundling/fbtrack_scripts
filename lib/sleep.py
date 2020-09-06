@@ -10,18 +10,18 @@ from .row import row_factory
 
 Row = row_factory(headers=headers['sleep'])
 
-def extract_sleep_data(dataset):
+def extract_sleep_data(dataset=None):
 
     ''' Extract sleep data or return None if it doesn't exist. '''
 
-    sleep_dataset = None 
-    if 'sleep' in dataset and len( dataset['sleep'] ):
-        sleep_dataset = dataset['sleep'][0]
+    if dataset is None:
+        return None
 
-    return sleep_dataset
+    else: 
+        if 'sleep' in dataset and len( dataset['sleep'] ):
+            return dataset['sleep'][0]
 
 def build_sleep(subject_id, dataset):
-    # bug in this function?
 
     sleep_dataset = extract_sleep_data(dataset)
 
@@ -30,7 +30,7 @@ def build_sleep(subject_id, dataset):
         return Row(
             subjectid = subject_id,
             msid = '.',
-            date = fb_date_to_msband_date( dataset['activities-heart'][0]['dateTime'] ),
+            date = fb_date_to_msband_date(dataset['activities-heart'][0]['dateTime']) if dataset.get('activities-heart') else None,
             dur = sleep_dataset['duration'] / MS_PER_HR_FLOAT,  
             avghr = get_avg_heart_rate( dataset['activities-heart-intraday'] ),
             pkhr = get_peak_heart_rate( dataset['activities-heart-intraday'] ), 
@@ -39,11 +39,7 @@ def build_sleep(subject_id, dataset):
             cal = get_calories(dataset.get('activities-calories')),
             sleff = sleep_dataset['efficiency'],
             sdurrl = sleep_dataset['restlessDuration'] / MIN_PER_HR_FLOAT,
-
             sdurrf = '.',
-            # sdurrf is N/A but here's a guess as to how to calculate:
-            # (sleep_dataset['minutesAsleep'] - sleep_dataset['restlessDuration']) / MIN_PER_HR_FLOAT, 
-
             numwu = sleep_dataset['awakeningsCount'], 
             awdur = sleep_dataset['awakeDuration'] / MIN_PER_HR_FLOAT, 
             sdur = sleep_dataset['minutesAsleep'] / MIN_PER_HR_FLOAT,
@@ -56,5 +52,5 @@ def build_sleep(subject_id, dataset):
     else:
         return Row(
             subjectid=subject_id, 
-            date=fb_date_to_msband_date(dataset['activities-heart'][0]['dateTime']),
+            date=fb_date_to_msband_date(dataset['activities-heart'][0]['dateTime']) if dataset.get('activities-heart') else None,
         )

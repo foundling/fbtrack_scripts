@@ -50,5 +50,19 @@ headers = {
         'dt',
         'hract'
 
-    ]
+    ],
+    'sleep_by_minute' : [
+
+        'subjectid',
+        'date',
+        'day',
+        'month',
+        'is_main_event',
+        'time_bed',
+        'sleep_dur',
+        'sleep_start_time',
+        'sleep_end_time',
+        'sleep_time',
+        'sleep_phase'
+    ],
 }
