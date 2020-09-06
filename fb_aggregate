@@ -1,0 +1,147 @@
+#!/usr/bin/env python3
+
+'''
+    Aggregate JSON FitBit data for all subjects in ACT study.
+    Write to {sleep, daily and hourly} output files.
+'''
+
+# rename output dir to dest dir
+# create output dir with name 'json-to-csv-%DATE%-': each run of the script puts results there
+# aggregate subject-metrics-for-single-day into all.json
+# ensure the top level keys make sense
+
+
+import argparse
+import csv
+from datetime import datetime, timedelta
+from itertools import groupby
+import json
+import os
+import re
+from shutil import rmtree
+import sys
+
+from lib.headers import headers
+from lib.daily import build_daily
+from lib.hourly import build_hourly
+from lib.sleep import build_sleep
+
+parser = argparse.ArgumentParser(description='fb_aggregate script')
+parser.add_argument('source', type=str, help='directory location for source JSON files')
+parser.add_argument('dest', type=str, help='output directory for aggregated CSV data')
+source_directory_arg = parser.parse_args().source
+output_directory_arg = parser.parse_args().dest
+
+# validate dirs here
+
+aggregators = {
+
+    'sleep':  build_sleep,
+    'daily':  build_daily,
+    'hourly': build_hourly
+
+}
+
+SCRIPT_ROOT = os.path.abspath(os.curdir) 
+SRC_DIR = os.path.realpath(source_directory_arg) 
+DEST_DIR = os.path.realpath(output_directory_arg)
+FILE_TIME_STAMP = datetime.now().strftime('%Y-%m-%d')
+DATA_DIR_TIMESTAMP = datetime.now().strftime('%Y-%m-%d_%H.%M.%S')
+CONVERTED_DATA_DIR = os.path.abspath(os.path.join(DEST_DIR, DATA_DIR_TIMESTAMP)) 
+
+def get_subject_id(filename):
+    return os.path.basename(filename).split('_', maxsplit=1)[0]
+
+def get_collection_date(filename):
+    return os.path.basename(filename).split('_', maxsplit=2)[1]
+
+def main():
+
+    timestamp = datetime.now().strftime('%m-%d-%y-%H_%M')
+    os.mkdir(CONVERTED_DATA_DIR)
+
+    json_filenames = [  os.path.join(SRC_DIR, filename) 
+                        for filename 
+                        in os.listdir(SRC_DIR) 
+                        if filename.endswith('.json') and not filename.endswith('all.json') ]
+
+    files_by_subject_id = list( 
+        (subject_id, list(files))
+        for subject_id, files
+        in groupby(json_filenames, get_subject_id)
+    )
+
+    aggregation_types = aggregators.keys()
+    for aggregation_type in aggregation_types:
+
+        # assemble full path for output CSV file 
+        time_stamped_filename = '{}_{}.csv'.format(aggregation_type, FILE_TIME_STAMP)
+        outfile_path = os.path.join(CONVERTED_DATA_DIR, time_stamped_filename)
+
+        # open output file
+        with open(outfile_path, 'a+') as outfile:
+
+            # write headers
+            csv_writer = csv.writer(outfile)
+            csv_writer.writerow(headers[ aggregation_type ])
+
+            # group filenames for subject_id by date
+            for subject_id, subject_json_paths in files_by_subject_id:
+
+                subject_metrics_by_date = list(
+                    (datestring, list(metrics))
+                    for datestring, metrics 
+                    in groupby(subject_json_paths, get_collection_date)
+                )
+
+                # then aggregate all of that data into an '...all.json' file
+                for datestring, metric_filenames in subject_metrics_by_date:
+                    aggregated_metrics_for_day = {} 
+                    aggregated_fname = '{}_{}_all.json'.format(subject_id, datestring)
+                    aggregated_output_filepath = os.path.abspath(os.path.join(SRC_DIR, aggregated_fname))
+
+                    # read and parse each subject file to python dict, merge into aggregated_metrics_for_day   
+                    for filename in metric_filenames:
+                        metric = filename.split('_')[2].split('.')[0]
+                        filepath = os.path.abspath(os.path.join(SRC_DIR, filename)) 
+                        with open(filepath) as json_file:
+                            metric_as_json = json.load(json_file)
+                            aggregated_metrics_for_day[metric] = metric_as_json
+
+                    with open(aggregated_output_filepath, 'w') as f:
+                        json.dump(aggregated_metrics_for_day, f, sort_keys=True, indent=4)
+
+                # TODO: pickup here -- new structure has metrics as top level 'all.json' keys. but duplicate key
+                # nested inside that object with data, and possibly other keys
+                # left to do: make sure you grab the right object in the analysis part. 
+
+                # for each of the sorted JSON source files for this subject 
+                for filepath in subject_json_paths:
+
+                    #open the source file and parse the JSON to python dict.
+                    dataset = json.loads( open(filepath).read() )
+                    dataset_datestring = os.path.basename(filepath).split('_')[1]
+                    dataset_date = datetime.strptime(dataset_datestring, '%Y-%m-%d')
+
+                    # look up the correct aggregator function in the dict at the top of main() 
+                    # and run it on the dataset parsed from the JSON file 
+                    aggregator = aggregators[ aggregation_type ]
+                    aggregated_data = aggregator(subject_id, dataset)
+
+                    # the hourly aggregator returns a row of rows, so use csv's .writerows method 
+                    if (aggregation_type == 'hourly'): 
+                        csv_writer.writerows(aggregated_data)
+                    else:
+                        csv_writer.writerow(aggregated_data)
+
+if __name__ == '__main__':
+
+    if not os.path.isdir(source_directory_arg):
+        print('Source directory does not exist or is not a directory: ', source_directory_arg) 
+        sys.exit(1)
+
+    if not os.path.isdir(output_directory_arg):
+        print('Dest directory does not exist or is not a directory: ', output_directory_arg) 
+        sys.exit(1)
+
+    main()
