@@ -27,13 +27,6 @@ parser.add_argument('dest', type=str, help='output directory for aggregated CSV 
 source_directory_arg = parser.parse_args().source
 output_directory_arg = parser.parse_args().dest
 
-aggregators = {
-    'sleep':  build_sleep,
-    'daily':  build_daily,
-    'hourly': build_hourly,
-    'sleep_by_minute': build_sleep_minute
-}
-
 SCRIPT_ROOT = os.path.abspath(os.curdir) 
 SRC_DIR = os.path.realpath(source_directory_arg) 
 DEST_DIR = os.path.realpath(output_directory_arg)
@@ -42,28 +35,31 @@ FILE_TIMESTAMP = NOW.strftime('%Y-%m-%d')
 DATA_DIR_TIMESTAMP = NOW.strftime('%Y-%m-%d_%H.%M.%S')
 CONVERTED_DATA_DIR = os.path.abspath(os.path.join(DEST_DIR, DATA_DIR_TIMESTAMP)) 
 
+def validate_args():
+
+    if not os.path.isdir(source_directory_arg):
+        print('Source directory does not exist or is not a directory: ', source_directory_arg) 
+        sys.exit(1)
+
+    if not os.path.isdir(output_directory_arg):
+        print('Dest directory does not exist or is not a directory: ', output_directory_arg) 
+        sys.exit(1)
+
+
 def get_subject_id(filename):
     return os.path.basename(filename).split('_', maxsplit=1)[0]
+
 
 def get_collection_date(filename):
     return os.path.basename(filename).split('_', maxsplit=2)[1]
 
-def main():
 
-    os.mkdir(CONVERTED_DATA_DIR)
+def combine_daily_subject_metric_files(filepaths_by_subject_id):
 
-    # filter all json data files, excluding 'all' files 
-    json_filepaths = [  os.path.join(SRC_DIR, filename) 
-                        for filename 
-                        in os.listdir(SRC_DIR) 
-                        if filename.endswith('.json') and not filename.endswith('all.json') ]
-
-    # group them into lists under subject id
-    filepaths_by_subject_id = list(
-        (subject_id, list(files))
-        for subject_id, files
-        in groupby(json_filepaths, get_subject_id)
-    )
+    '''
+    For each subject, gather their metric data for each day into a single dictionary and write that out
+    as .json into a '<subject id>_<date string>_all.json' file. 
+    '''
 
     for subject_id, json_paths in filepaths_by_subject_id:
 
@@ -74,26 +70,82 @@ def main():
         )
 
         for datestring, metric_filenames in subject_metrics_by_date:
+
             aggregated_metrics_for_day = {} 
             aggregated_fname = '{}_{}_all.json'.format(subject_id, datestring)
             aggregated_output_filepath = os.path.abspath(os.path.join(SRC_DIR, aggregated_fname))
 
             for filename in metric_filenames:
+
                 metric = os.path.basename(filename).split('_')[2].split('.')[0]
+                if metric == 'activities-heartrate':
+                    metric = 'activities-heart'
+
                 filepath = os.path.abspath(os.path.join(SRC_DIR, filename)) 
+
+
                 with open(filepath) as json_file:
                     metric_as_json = json.load(json_file)
-                    aggregated_metrics_for_day[metric] = metric_as_json
+                    aggregated_metrics_for_day[metric] = metric_as_json[metric]
 
             with open(aggregated_output_filepath, 'w') as f:
                 json.dump(aggregated_metrics_for_day, f, sort_keys=True, indent=4)
 
 
-                print(aggregated_output_filepath)
-    sys.exit(1)
+def setup():
 
-    # for each metric type
+    ''' 
+    - creates the time-stamped csv output directory for a given run of this script, e.g. 20-09-05/ 
+    - for each subject, combines metrics for a given day and writes to a time-stamped 'all.json' file.
+    '''
+
+    # create directory for daily, hourly, etc CSV files converted from Fitbit's json format
+    os.mkdir(CONVERTED_DATA_DIR)
+
+    # filter all json data files, excluding any existing 'all' files 
+    json_filepaths = [  os.path.join(SRC_DIR, filename) 
+                        for filename 
+                        in os.listdir(SRC_DIR) 
+                        if filename.endswith('.json') and not filename.endswith('all.json') ]
+
+    # group them into lists of files by subject id
+    filepaths_by_subject_id = list(
+        (subject_id, list(files))
+        for subject_id, files
+        in groupby(json_filepaths, get_subject_id)
+    )
+
+    combine_daily_subject_metric_files(filepaths_by_subject_id)
+
+
+def main():
+
+
+    '''
+    takes the all.json files and process them using the files in lib/
+    and finally writes them out to a time-stamped directory as '<metric>_<sleep>.csv'.
+    '''
+
+    setup()
+
+    sys.exit()
+
+    all_metric_files = [ 
+        os.path.join(SRC_DIR, filename)
+        for filename 
+        in os.listdir(SRC_DIR) 
+        if filename.endswith('_all.json') 
+    ]
+
+    aggregators = {
+        'sleep':  build_sleep,
+        'daily':  build_daily,
+        'hourly': build_hourly,
+        'sleep_by_minute': build_sleep_minute
+    }
+
     aggregation_types = aggregators.keys()
+
     for aggregation_type in aggregation_types:
 
         metric_output_filename = '{}_{}.csv'.format(aggregation_type, FILE_TIMESTAMP)
@@ -104,8 +156,9 @@ def main():
             csv_writer = csv.writer(outfile)
             csv_writer.writerow(headers[ aggregation_type ])
 
-            for filepath in json_paths:
+            for filepath in all_metric_files:
 
+                subject_id = os.path.basename(filepath).split('_')[0]
                 dataset = json.loads( open(filepath).read() )
                 dataset_datestring = os.path.basename(filepath).split('_')[1]
                 dataset_date = datetime.strptime(dataset_datestring, '%Y-%m-%d')
@@ -121,12 +174,5 @@ def main():
 
 if __name__ == '__main__':
 
-    if not os.path.isdir(source_directory_arg):
-        print('Source directory does not exist or is not a directory: ', source_directory_arg) 
-        sys.exit(1)
-
-    if not os.path.isdir(output_directory_arg):
-        print('Dest directory does not exist or is not a directory: ', output_directory_arg) 
-        sys.exit(1)
-
+    validate_args()
     main()

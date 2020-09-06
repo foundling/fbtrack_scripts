@@ -10,28 +10,16 @@ from .row import row_factory
 
 Row = row_factory(headers=headers['sleep'])
 
-def extract_sleep_data(dataset=None):
-
-    ''' Extract sleep data or return None if it doesn't exist. '''
-
-    if dataset is None:
-        return None
-
-    else: 
-        if 'sleep' in dataset and len( dataset['sleep'] ):
-            return dataset['sleep'][0]
-
 def build_sleep(subject_id, dataset):
 
-    sleep_dataset = extract_sleep_data(dataset)
-
-    if sleep_dataset:
+    sleep_data = dataset['sleep']
+    if 'sleep' in sleep_data:
 
         return Row(
             subjectid = subject_id,
             msid = '.',
             date = fb_date_to_msband_date(dataset['activities-heart'][0]['dateTime']) if dataset.get('activities-heart') else None,
-            dur = sleep_dataset['duration'] / MS_PER_HR_FLOAT,  
+            dur = dataset['sleep']['duration'] / MS_PER_HR_FLOAT,  
             avghr = get_avg_heart_rate( dataset['activities-heart-intraday'] ),
             pkhr = get_peak_heart_rate( dataset['activities-heart-intraday'] ), 
             lwhr = get_lowest_heart_rate( dataset['activities-heart-intraday'] ),
