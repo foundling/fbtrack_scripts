@@ -11,20 +11,19 @@ Row = row_factory(headers=headers['daily'])
 
 def build_daily(subject_id, dataset):
 
-    heart_data = dataset.get('activities-heart-intraday', None)
+    heart_data = dataset['activities-heart-intraday']['dataset']
 
-    if heart_data is not None and len(heart_data):     
+    if len(heart_data):
 
         return Row(
             
             subjectid=subject_id,
             date=fb_date_to_msband_date( dataset['activities-heart'][0]['dateTime'] ),
-            avghr=get_avg_heart_rate( dataset['activities-heart-intraday'] ), 
-            pkhr=get_peak_heart_rate( dataset['activities-heart-intraday'] ), 
-            lwhr=get_lowest_heart_rate( dataset['activities-heart-intraday'] ), 
-            step=int(dataset['activities-steps'][0]['value']) if dataset.get('activities-steps') else '.',
-            #cal=int( dataset['activities-calories'][0]['value'] ),
-            cal=get_calories(dataset.get('activities-calories')),
+            avghr=get_avg_heart_rate( dataset['activities-heart-intraday'] ),
+            pkhr=get_peak_heart_rate( dataset['activities-heart-intraday'] ),
+            lwhr=get_lowest_heart_rate( dataset['activities-heart-intraday'] ),
+            step=int( dataset['activities-steps'][0]['value'] ),
+            cal=int( dataset['activities-calories'][0]['value'] ) if dataset.get('activities-calories') else '.',
             dt=float(dataset['activities-distance'][0]['value']) if len(dataset.get('activities-distance', [])) else '.',
             dtof=float(dataset['activities-distance'][0]['value']) if len(dataset.get('activities-distance', [])) else '.',
             hract= (dataset['activities'][0]['duration']) / MS_PER_HR_FLOAT if dataset.get('activities') else '.'

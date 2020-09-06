@@ -35,6 +35,7 @@ FILE_TIMESTAMP = NOW.strftime('%Y-%m-%d')
 DATA_DIR_TIMESTAMP = NOW.strftime('%Y-%m-%d_%H.%M.%S')
 CONVERTED_DATA_DIR = os.path.abspath(os.path.join(DEST_DIR, DATA_DIR_TIMESTAMP)) 
 
+
 def validate_args():
 
     if not os.path.isdir(source_directory_arg):
@@ -61,6 +62,24 @@ def combine_daily_subject_metric_files(filepaths_by_subject_id):
     as .json into a '<subject id>_<date string>_all.json' file. 
     '''
 
+    additional_keys_to_include = {
+        'sleep': [
+            'summary'
+        ],
+        'activities-calories': [
+            'activities-calories-intraday'
+        ],
+        'activities-distance': [
+            'activities-distance-intraday'
+        ],
+        'activities-heart': [
+            'activities-heart-intraday'
+        ],
+        'activities-steps': [
+            'activities-steps-intraday'
+        ]
+    }
+
     for subject_id, json_paths in filepaths_by_subject_id:
 
         subject_metrics_by_date = list(
@@ -68,6 +87,7 @@ def combine_daily_subject_metric_files(filepaths_by_subject_id):
             for datestring, metrics 
             in groupby(json_paths, get_collection_date)
         )
+
 
         for datestring, metric_filenames in subject_metrics_by_date:
 
@@ -77,16 +97,14 @@ def combine_daily_subject_metric_files(filepaths_by_subject_id):
 
             for filename in metric_filenames:
 
-                metric = os.path.basename(filename).split('_')[2].split('.')[0]
-                if metric == 'activities-heartrate':
-                    metric = 'activities-heart'
-
+                #metric = os.path.basename(filename).split('_')[2].split('.')[0]
+                #metric = 'activities-heart' if metric == 'activities-heartrate' else metric
                 filepath = os.path.abspath(os.path.join(SRC_DIR, filename)) 
-
 
                 with open(filepath) as json_file:
                     metric_as_json = json.load(json_file)
-                    aggregated_metrics_for_day[metric] = metric_as_json[metric]
+                    for key in metric_as_json.keys(): 
+                        aggregated_metrics_for_day[key] = metric_as_json[key]
 
             with open(aggregated_output_filepath, 'w') as f:
                 json.dump(aggregated_metrics_for_day, f, sort_keys=True, indent=4)
@@ -121,14 +139,12 @@ def setup():
 def main():
 
 
+    setup()
+
     '''
     takes the all.json files and process them using the files in lib/
     and finally writes them out to a time-stamped directory as '<metric>_<sleep>.csv'.
     '''
-
-    setup()
-
-    sys.exit()
 
     all_metric_files = [ 
         os.path.join(SRC_DIR, filename)
@@ -148,7 +164,7 @@ def main():
 
     for aggregation_type in aggregation_types:
 
-        metric_output_filename = '{}_{}.csv'.format(aggregation_type, FILE_TIMESTAMP)
+        metric_output_filename = '{}.csv'.format(aggregation_type)
         outfile_path = os.path.join(CONVERTED_DATA_DIR, metric_output_filename)
 
         with open(outfile_path, 'a+') as outfile:
