@@ -25,8 +25,6 @@ def build_sleep(subject_id, dataset):
 
     sleep_dataset = extract_sleep_data(dataset)
 
-    # activities', 'activities-calories', 'activities-calories-intraday', 'activities-distance', 'activities-distance-intraday', 'activities-heart', 'activities-heart-intraday', 'activities-steps', 'activities-steps-intraday', 'activities-summary', 'goals', 'sleep', 'sleep-summary'
-    print(dataset.keys())
     if sleep_dataset:
 
         return [ Row(

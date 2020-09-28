@@ -1,5 +1,9 @@
 from collections import namedtuple
 
+'''
+    This is a row object used to represent CSV data to be written to a csv file.
+'''
+
 def row_factory(headers=None, default_header_value='.'):
 
     if headers is None or not hasattr(headers, '__iter__'):
