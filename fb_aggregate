@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
 '''
-    Aggregate JSON FitBit data for all subjects in ACT study.
-    Write to {sleep, daily and hourly} output files.
+    This script aggregates JSON FitBit data from <SRC_DIR> for all subjects in ACT study into a file per date per subject.
+    Then those files are converted into CSV output and written to {sleep, daily and hourly} output files in <DEST_DIR> dir.
 '''
 
 import argparse
@@ -21,6 +21,8 @@ from lib.hourly import build_hourly
 from lib.sleep import build_sleep
 from lib.sleep_by_minute import build_sleep_minute
 
+# setup parser for the command-line script so it can be executed like ./fb_aggregate <JSON_DIR> <CSV_DIR>
+
 parser = argparse.ArgumentParser(description='fb_aggregate script')
 parser.add_argument('source', type=str, help='directory location for source JSON files')
 parser.add_argument('dest', type=str, help='output directory for aggregated CSV data')
@@ -37,6 +39,7 @@ CONVERTED_DATA_DIR = os.path.abspath(os.path.join(DEST_DIR, DATA_DIR_TIMESTAMP))
 
 
 def validate_args():
+    ''' make sure script invocation matches "fb_aggregate <SRC_DIR> <DEST_DIR>'''
 
     if not os.path.isdir(source_directory_arg):
         print('Source directory does not exist or is not a directory: ', source_directory_arg) 
@@ -85,11 +88,12 @@ def combine_daily_subject_metric_files(filepaths_by_subject_id):
                 with open(filepath) as json_file:
                     json_obj = json.load(json_file)
                     for key in json_obj.keys(): 
+
+                        # multiple top-level 'summary' keys for metric files, so we namespace them.
                         if (key == 'summary'):
                             aggregated_metrics_for_day['{}-summary'.format(metric)] = json_obj[key] # summary could be overwritten by activities summary
                         else:
                             aggregated_metrics_for_day[key] = json_obj[key] # summary could be overwritten by activities summary
-            print(aggregated_metrics_for_day.keys())
 
             with open(aggregated_output_filepath, 'w') as f:
                 json.dump(aggregated_metrics_for_day, f, sort_keys=True, indent=4)
@@ -98,7 +102,7 @@ def combine_daily_subject_metric_files(filepaths_by_subject_id):
 def setup():
 
     ''' 
-    - creates the time-stamped csv output directory for a given run of this script, e.g. 20-09-05/ 
+    - creates the time-stamped csv output directory for a given run of this script, e.g. 2020-09-28_17.38.48/ 
     - for each subject, combines metrics for a given day and writes to a time-stamped 'all.json' file.
     '''
 
@@ -127,8 +131,11 @@ def main():
     setup()
 
     '''
-    takes the all.json files and process them using the modules imported from lib/
+    The main logic for the conversion of subject .json files from Fitbit's API to ACT study csv formatted files. 
+    Takes the all.json files and process them using the modules imported from lib/
     and finally writes them out to a time-stamped directory as '<metric>.csv'.
+
+    TODO: someone inside the lab needs to look at the conversion library code in lib and correct it.
     '''
 
     all_metric_files = [ 
@@ -139,10 +146,11 @@ def main():
     ]
 
     aggregators = {
-        'sleep':  build_sleep,
         'daily':  build_daily,
         'hourly': build_hourly,
-        'sleep_by_minute': build_sleep_minute
+        # FIXME: these aggregators are found in lib/sleep.py and lib/sleep_by_minute.py
+        #'sleep':  build_sleep,
+        #'sleep_by_minute': build_sleep_minute
     }
 
     for aggregation_type in aggregators.keys():
@@ -172,6 +180,7 @@ def main():
                     csv_writer.writerow(aggregated_data)
 
 if __name__ == '__main__':
+    ''' Runs if executed as a stand-alone module, (as a command-line script, for example) '''
 
     validate_args()
     main()

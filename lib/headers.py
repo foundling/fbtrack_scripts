@@ -8,6 +8,7 @@ headers = {
         'dur',
         'avghr',
         'pkhr',
+        'sleep_events',
         'lwhr',
         'cal',
         'sleff',

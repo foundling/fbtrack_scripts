@@ -25,6 +25,8 @@ def build_sleep(subject_id, dataset):
 
     sleep_dataset = extract_sleep_data(dataset)
 
+    # activities', 'activities-calories', 'activities-calories-intraday', 'activities-distance', 'activities-distance-intraday', 'activities-heart', 'activities-heart-intraday', 'activities-steps', 'activities-steps-intraday', 'activities-summary', 'goals', 'sleep', 'sleep-summary'
+    print(dataset.keys())
     if sleep_dataset:
 
         return [ Row(
@@ -48,11 +50,12 @@ def build_sleep(subject_id, dataset):
             time_bed = sleep_dataset[i]['duration'] / MS_PER_HR_FLOAT, #this would be the first sleep event only
             sleep_eff = sleep_dataset[i]['efficiency'], #this would be the first sleep event only
             fall_asleep_dur = sleep_dataset[i]['minutesToFallAsleep'] / MIN_PER_HR_FLOAT,
-            restless_dur = sleep_dataset[i]['restlessDuration'] / MIN_PER_HR_FLOAT, #where does this key come from? no mention in fitbit's API, maybe it changed?
+            # FIXME: where does this key come from? no mention in fitbit's API, maybe it changed?
+            #restless_dur = sleep_dataset[i]['restlessDuration'] / MIN_PER_HR_FLOAT, 
             #restless_prop = restless_dur / sleep_dur,
-            awakenings_count = sleep_dataset[i]['awakeningsCount'],
-            awake_count = sleep_dataset[i]['awakeCount'],
-            awake_dur = sleep_dataset[i]['awakeDuration'] / MIN_PER_HR_FLOAT
+            # FIXME: awakenings_count = sleep_dataset[i]['awakeningsCount'],
+            # FIXME: awake_count = sleep_dataset[i]['awakeCount'],
+            #awake_dur = sleep_dataset[i]['awakeDuration'] / MIN_PER_HR_FLOAT
 
             #hrrest = '.',
             #fat = sleep_dataset['minutesToFallAsleep'] / MIN_PER_HR_FLOAT,
